@@ -37,6 +37,8 @@ class Settings(Base):
     preferred_companies: Mapped[str] = mapped_column(Text, default="")
     work_arrangements: Mapped[str] = mapped_column(Text, default="remote,hybrid,on-site")
     minimum_score: Mapped[int] = mapped_column(Integer, default=70)
+    gemini_match_model: Mapped[str] = mapped_column(String(120), default="gemini-3.5-flash-lite")
+    gemini_tailor_model: Mapped[str] = mapped_column(String(120), default="gemini-3.5-flash-lite")
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now)
 
 
@@ -57,6 +59,27 @@ class JobSource(Base):
     kind: Mapped[str] = mapped_column(String(40))
     config_json: Mapped[str] = mapped_column(Text, default="{}")
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class CompanyBoard(Base):
+    __tablename__ = "company_boards"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company: Mapped[str] = mapped_column(String(255))
+    provider: Mapped[str] = mapped_column(String(50))
+    identifier: Mapped[str] = mapped_column(String(255))
+    discovery_source: Mapped[str] = mapped_column(String(255), default="manual")
+    last_checked: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    validation_status: Mapped[str] = mapped_column(String(30), default="unknown")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class DiscoverySourceError(Base):
+    __tablename__ = "discovery_source_errors"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[int] = mapped_column(ForeignKey("discovery_runs.id"))
+    source: Mapped[str] = mapped_column(String(80))
+    message: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now)
 
 
 class Job(Base):
@@ -81,6 +104,11 @@ class Job(Base):
     needs_manual_description: Mapped[bool] = mapped_column(Boolean, default=False)
     dedupe_key: Mapped[str] = mapped_column(String(512))
     match_score: Mapped[Optional[float]] = mapped_column(Float)
+    source_links_json: Mapped[str] = mapped_column(Text, default="[]")
+    city: Mapped[str] = mapped_column(String(120), default="")
+    work_arrangement: Mapped[str] = mapped_column(String(30), default="unknown")
+    geo_eligibility: Mapped[str] = mapped_column(String(30), default="unknown")
+    role_category: Mapped[str] = mapped_column(String(80), default="")
     application_status: Mapped[str] = mapped_column(String(30), default="new")
     match: Mapped[Optional["JobMatch"]] = relationship(
         back_populates="job", uselist=False, cascade="all, delete-orphan"
@@ -131,3 +159,10 @@ class DiscoveryRun(Base):
     jobs_seen: Mapped[int] = mapped_column(Integer, default=0)
     llm_calls: Mapped[int] = mapped_column(Integer, default=0)
     error: Mapped[str] = mapped_column(Text, default="")
+    current_source: Mapped[str] = mapped_column(String(80), default="")
+    fetched_count: Mapped[int] = mapped_column(Integer, default=0)
+    new_count: Mapped[int] = mapped_column(Integer, default=0)
+    duplicate_count: Mapped[int] = mapped_column(Integer, default=0)
+    filtered_count: Mapped[int] = mapped_column(Integer, default=0)
+    matched_count: Mapped[int] = mapped_column(Integer, default=0)
+    pending_count: Mapped[int] = mapped_column(Integer, default=0)

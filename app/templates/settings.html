@@ -1,1 +1,25 @@
-{% extends "base.html" %}{% block content %}<h1>Settings</h1><form method="post" class="card card-body mb-4"><label>Preferred roles</label><textarea name="preferred_roles" class="form-control mb-2">{{settings.preferred_roles}}</textarea><label>Locations</label><input name="locations" class="form-control mb-2" value="{{settings.locations}}"><label>Languages</label><input name="languages" class="form-control mb-2" value="{{settings.languages}}"><label>Excluded keywords</label><input name="excluded_keywords" class="form-control mb-2" value="{{settings.excluded_keywords}}"><label>Minimum score</label><input name="minimum_score" type="number" class="form-control mb-2" value="{{settings.minimum_score}}"><button class="btn btn-primary">Save</button></form><h2>Resume profile</h2><p class="text-muted">Upload stays local. Review and approve extracted facts before using them for tailoring.</p><form method="post" action="/profile/upload" enctype="multipart/form-data"><input type="file" name="file" accept=".pdf,.docx,.tex" class="form-control mb-2"><button class="btn btn-outline-primary">Upload resume</button></form>{% endblock %}
+{% extends "base.html" %}{% block content %}
+<h1>Settings</h1>
+<form method="post" class="card card-body mb-4">
+  <label>Preferred roles and German titles</label><textarea name="preferred_roles" class="form-control mb-2">{{settings.preferred_roles}}</textarea>
+  <label>Locations</label><input name="locations" class="form-control mb-2" value="{{settings.locations}}">
+  <label>Languages</label><input name="languages" class="form-control mb-2" value="{{settings.languages}}">
+  <label>Excluded keywords</label><input name="excluded_keywords" class="form-control mb-2" value="{{settings.excluded_keywords}}">
+  <label>Minimum score</label><input name="minimum_score" type="number" class="form-control mb-3" value="{{settings.minimum_score}}">
+  <h3>Gemini models</h3>
+  <p class="text-muted small">API keys stay on the server. Use “Test Gemini connection” to list models accessible to the configured key.</p>
+  <label>Matching model</label><select id="gemini-match-model" name="gemini_match_model" class="form-select mb-2"><option>{{settings.gemini_match_model or gemini_defaults.gemini_model}}</option></select>
+  <label>Resume tailoring model</label><select id="gemini-tailor-model" name="gemini_tailor_model" class="form-select mb-2"><option>{{settings.gemini_tailor_model or gemini_defaults.gemini_tailor_model}}</option></select>
+  <div class="d-flex align-items-center gap-2 mb-3"><button type="button" id="gemini-test" class="btn btn-outline-secondary">Test Gemini connection</button><span id="gemini-result" class="small"></span></div>
+  <button class="btn btn-primary">Save settings</button>
+</form>
+<h2>Resume profile</h2><p class="text-muted">Upload stays local. Review and approve extracted facts before tailoring.</p>
+<form method="post" action="/profile/upload" enctype="multipart/form-data"><input type="file" name="file" accept=".pdf,.docx,.tex" class="form-control mb-2"><button class="btn btn-outline-primary">Upload resume</button></form>
+<hr><h2>Source health</h2><p class="text-muted">Configure credentials in <code>.env</code>. LinkedIn, Indeed, StepStone, and XING use authorized alert emails only.</p>
+<button id="imap-test" class="btn btn-outline-secondary">Test IMAP connection</button><span id="imap-result" class="ms-2"></span>
+{% if boards %}<h3 class="mt-3">Company board registry</h3><ul>{% for board in boards %}<li>{{board.company}} — {{board.provider}}/{{board.identifier}} — {{board.validation_status}}</li>{% endfor %}</ul>{% endif %}
+<script>
+const matchSelect=document.getElementById('gemini-match-model'), tailorSelect=document.getElementById('gemini-tailor-model'), result=document.getElementById('gemini-result');
+document.getElementById('gemini-test').onclick=async()=>{result.textContent='Testing…';result.className='small text-muted';try{const r=await fetch('/api/gemini/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:matchSelect.value})});const data=await r.json();if(!r.ok)throw data;const currentMatch=matchSelect.value,currentTailor=tailorSelect.value;[matchSelect,tailorSelect].forEach(select=>{select.innerHTML='';data.models.forEach(model=>{const option=document.createElement('option');option.value=model.name;option.textContent=model.name+(model.supports_generation?' ✓ generation':' — no generation');option.disabled=!model.supports_generation;select.appendChild(option)})});matchSelect.value=data.models.some(x=>x.name===currentMatch)?currentMatch:data.model;tailorSelect.value=data.models.some(x=>x.name===currentTailor)?currentTailor:data.model;result.textContent='Connected. Test response: '+data.response_preview;result.className='small text-success'}catch(error){const detail=error.detail||{};result.textContent=(detail.code?detail.code+': ':'')+(detail.message||'Gemini connection failed');result.className='small text-danger'}};
+document.getElementById('imap-test').onclick=async()=>{const r=await(await fetch('/settings/imap-test',{method:'POST'})).json();document.getElementById('imap-result').textContent=r.message};
+</script>{% endblock %}

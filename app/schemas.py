@@ -1,6 +1,10 @@
 from pydantic import BaseModel, Field
 
 
+class GeminiTestRequest(BaseModel):
+    model: str = Field(min_length=1, max_length=120)
+
+
 class CandidateData(BaseModel):
     personal_details: dict = Field(default_factory=dict)
     education: list[dict] = Field(default_factory=list)
