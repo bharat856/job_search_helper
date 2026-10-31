@@ -1,0 +1,11 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+storage/*.db
+storage/uploads/
+storage/generated/
+storage/*.pdf
+storage/*.tex
+.DS_Store

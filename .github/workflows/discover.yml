@@ -1,0 +1,17 @@
+name: Scheduled discovery (optional)
+on:
+  workflow_dispatch:
+  schedule: [{cron: '0 5 * * *'}]
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install .
+      - run: python -m app.tasks.discover
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    # SQLite in an ephemeral runner is not durable; use an external DATABASE_URL or artifact/import flow.
